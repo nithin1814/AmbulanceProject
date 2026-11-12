@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetroFlow Emergency Response - Dispatch Portal</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e14;
+            --bg-panel: rgba(18, 25, 35, 0.7);
+            --text-primary: #f1f1f1;
+            --text-secondary: #aaaaaa;
+            --cyan-primary: #00c6ff;
+            --cyan-hover: #0088cc;
+            --teal-accent: #00f2fe;
+            --green-signal: #28a745;
+            --red-signal: #dc3545;
+            --amber-signal: #ffc107;
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Attractive, dynamically generated animated background */
+        #background-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* Layout Structure */
+        header {
+            background-color: var(--bg-panel);
+            backdrop-filter: blur(10px);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            z-index: 100;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #ffffff, var(--cyan-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-status {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            background-color: var(--green-signal);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 10px var(--green-signal);
+        }
+
+        /* The Main Portal View */
+        #main-portal {
+            flex-grow: 1;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Real-World Dashboard Simulation */
+        .dashboard {
+            width: 100%;
+            max-width: 1400px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 380px;
+            grid-gap: 30px;
+        }
+
+        .dashboard-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(15px);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #333;
+            box-shadow: var(--shadow-md);
+        }
+
+        .dashboard-panel h3 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: #fff;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        /* Vehicle Monitor Styling */
+        .vehicle-id { color: var(--cyan-primary); font-weight: bold; font-size: 1.2em; }
+        .data-point { margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 15px;}
+        .data-label { color: var(--text-secondary); }
+        .data-value { color: #fff; font-family: 'Courier New', monospace;}
+
+        /* Status Pill */
+        .status-pill {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-verified { background-color: rgba(40, 167, 69, 0.2); color: var(--green-signal); border: 1px solid var(--green-signal); }
+        .status-pending { background-color: rgba(255, 193, 7, 0.2); color: var(--amber-signal); border: 1px solid var(--amber-signal); }
+
+        /* Modern Dashboard Buttons */
+        .btn-dashboard {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            background: #232d3a;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .btn-dashboard:hover {
+            background: #333f4f;
+            border-color: #555;
+        }
+        .btn-trigger {
+            background: linear-gradient(45deg, var(--cyan-primary), var(--teal-accent));
+            border: none;
+            color: #fff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .btn-trigger:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.7);
+        }
+
+        /* Traffic Signal Visual */
+        .signal-system { display: flex; justify-content: center; gap: 40px; margin-top: 30px; }
+        .signal-light {
+            width: 60px;
+            height: 160px;
+            background-color: #111;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 2px solid #333;
+        }
+        .light {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background-color: #222;
+            transition: background 0.2s;
+        }
+        .signal-active-red #light-red { background-color: var(--red-signal); box-shadow: 0 0 20px var(--red-signal); }
+        .signal-active-green #light-green { background-color: var(--green-signal); box-shadow: 0 0 20px var(--green-signal); }
+
+        /* System Log */
+        .sys-log {
+            height: 300px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            color: #0f0;
+            font-size: 13px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        .log-entry { margin-bottom: 8px; line-height: 1.4; }
+        .log-time { color: var(--cyan-primary); }
+    </style>
+</head>
+<body>
+
+    <!-- Professional Background Layer -->
+    <canvas id="background-canvas"></canvas>
+
+    <!-- Professional Header -->
+    <header>
+        <h1>MetroFlow</h1>
+        <div class="header-status">
+            <div class="status-dot"></div>
+            Dispatch Portal Active [NYC CENTRAL]
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div id="main-portal">
+        <div id="simulation-dashboard" class="dashboard">
+            
+            <!-- Panel 1: Vehicle Telemetry -->
+            <div class="dashboard-panel">
+                <h3>Live Vehicle Monitor</h3>
+                <div class="data-point">
+                    <span class="data-label">Vehicle ID:</span>
+                    <span class="data-value vehicle-id">AMB-101</span>
+                </div>
+                <div class="data-point">
+                    <span class="data-label">Type:</span>
+                    <span class="data-value">Emergency Transport</span>
+                </div>
+                <div class="data-point">
+                    <span class="data-label">Location (ETA):</span>
+                    <span class="data-value">Junction 4 (3.2 min)</span>
+                </div>
+                <div class="data-point">
+                    <span class="data-label">Distance to Target:</span>
+                    <span class="data-value"><span id="dist">600</span> m</span>
+                </div>
+                <div class="data-point">
+                    <span class="data-label">Verification:</span>
+                    <span id="ver-pill" class="status-pill status-pending">PENDING</span>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button class="btn-dashboard" onclick="sys_verify()">Simulate Station Master: Verify Case</button>
+                    <button class="btn-dashboard" onclick="sys_move(350)">Simulate GPS: Approach Zone (350m)</button>
+                    <button class="btn-dashboard" onclick="sys_move(600)">Simulate GPS: Depart Zone (600m)</button>
+                </div>
+            </div>
+
+            <!-- Panel 2: Signal Infrastructure -->
+            <div class="dashboard-panel">
+                <h3>Signal System Control</h3>
+                <p class="data-label" style="text-align: center;">Target: Junction 4 Arterial</p>
+                <div class="signal-system">
+                    <div id="traffic-signal" class="signal-light signal-active-red">
+                        <div id="light-red" class="light"></div>
+                        <div id="light-amber" class="light"></div>
+                        <div id="light-green" class="light"></div>
+                    </div>
+                </div>
+                <div style="margin-top: 30px;">
+                    <button class="btn-dashboard btn-trigger" onclick="sys_trigger()">Execute Priority Trigger</button>
+                </div>
+            </div>
+
+            <!-- Panel 3: System Logs -->
+            <div class="dashboard-panel">
+                <h3>Priority Event Log</h3>
+                <div id="sys-log" class="sys-log">
+                    <div class="log-entry">Waiting for input...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        class AmbulanceSystem {
+            constructor(id, distance) {
+                this.id = id;
+                this.distance = distance;
+                this.verified = false;
+            }
+            verifyCase() { this.verified = true; }
+            updateDistance(newDist) { this.distance = newDist; }
+            triggerAutomation(threshold) {
+                if (this.distance <= threshold) {
+                    if (this.verified) { return "GREEN"; }
+                    else { return "BLOCKED_UNVERIFIED"; }
+                }
+                return "TOO_FAR";
+            }
+        }
+
+        const myAmbulance = new AmbulanceSystem("AMB-101", 600);
+        const threshold = 500;
+
+        window.onload = function() {
+            logSystemEvent("Dashboard connected. Session authenticated via Login Gateway.");
+        };
+
+        function updateDashboard(logMessage, signalState = "RED") {
+            document.getElementById("dist").innerText = myAmbulance.distance;
+            
+            const pill = document.getElementById("ver-pill");
+            if (myAmbulance.verified) {
+                pill.innerText = "VERIFIED";
+                pill.className = "status-pill status-verified";
+            } else {
+                pill.innerText = "PENDING";
+                pill.className = "status-pill status-pending";
+            }
+
+            const signalBox = document.getElementById("traffic-signal");
+            if (signalState === "GREEN") {
+                signalBox.className = "signal-light signal-active-green";
+            } else {
+                signalBox.className = "signal-light signal-active-red";
+            }
+
+            logSystemEvent(logMessage);
+        }
+
+        function logSystemEvent(message) {
+            const logBox = document.getElementById("sys-log");
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') + ":" + now.getSeconds().toString().padStart(2, '0');
+            logBox.innerHTML += `<div class="log-entry"><span class="log-time">[${timeStr}]</span> ${message}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function sys_verify() {
+            myAmbulance.verifyCase();
+            updateDashboard("Dispatch authenticated emergency case via Station Master protocol.");
+        }
+
+        function sys_move(newDist) {
+            myAmbulance.updateDistance(newDist);
+            updateDashboard(`GPS confirmed vehicle location update to ${newDist} meters.`);
+        }
+
+        function sys_trigger() {
+            let result = myAmbulance.triggerAutomation(threshold);
+            let logMsg = "";
+            let sigState = "RED";
+
+            if (result === "GREEN") {
+                logMsg = "AUTONOMOUS ACTUATION SUCCESSFUL. Signal 4 switched to GREEN. Lane cleared.";
+                sigState = "GREEN";
+            } else if (result === "BLOCKED_UNVERIFIED") {
+                logMsg = "CRITICAL FAILURE. Automated trigger blocked: Waiting for Station Master case verification.";
+            } else {
+                logMsg = "STATUS HOLD. Vehicle outside activation threshold. Normal signal cycle maintained.";
+            }
+            updateDashboard(logMsg, sigState);
+        }
+
+        // Background Animation Script
+        const canvas = document.getElementById('background-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        for (let i = 0; i < 60; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                speed: 0.1 + Math.random() * 0.3
+            });
+        }
+
+        function animateBackground() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgba(0, 198, 255, 0.4)";
+            
+            particles.forEach(p => {
+                p.y -= p.speed;
+                if (p.y < 0) p.y = canvas.height;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.strokeStyle = "rgba(0, 242, 254, 0.05)";
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 100) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0); ctx.lineTo(i + (Math.sin(Date.now() / 1000) * 20), canvas.height); ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 100) {
+                ctx.beginPath();
+                ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            requestAnimationFrame(animateBackground);
+        }
+        animateBackground();
+    </script>
+</body>
+</html>
